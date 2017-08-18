@@ -2,31 +2,38 @@ from django.db import models
 
 # Create your models here.
 class Persons(models.Model):
-    ip = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=2048, unique=True)
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=190)
     def __str__(self):
         return self.name
     
 class Sites(models.Model):
-    ip = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=256, unique=True)
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=190)
     def __str__(self):
         return self.name
 
 class Keywords(models.Model):
-    person = models.ForeignKey("Persons")
-    keyword = models.CharField(max_length=2048, unique=True)
+    id = models.AutoField(primary_key=True)
+    personId = models.ForeignKey("Persons")
+    name = models.CharField(max_length=190)
+    def __str__(self):
+        return self.name
 
 class Pages(models.Model):
-    sites = models.ForeignKey("Sites")
-    name = models.CharField(max_length=2048, unique=True)
+    siteId = models.ForeignKey("Sites")
+    id = models.AutoField(primary_key=True)
+    url = models.CharField(max_length=190)
+    lastScanDate = models.DateField(auto_now_add=True)
+    FoundDateTime = models.DateField(auto_now_add=True)
+    def __str__(self):
+        return str(self.siteId) + ' on ' + str(self.lastScanDate)
 
 class PersonPageRank(models.Model):
-    idPerson = models.ForeignKey("Persons")
-    idPage = models.ForeignKey("Pages")
+    personId = models.ForeignKey(Persons, related_name='person')
+    pageId = models.ForeignKey(Pages, related_name='page')
     rank = models.PositiveIntegerField()
-    lastScanData = models.DateField(auto_now_add=True)
-    FindData = models.DateField(auto_now_add=True)
+
     def __str__(self):
-        return str(self.idPerson) + ' on ' + str(self.lastScanData)
+        return str(self.personId) + ' on ' + str(self.pageId)
 
