@@ -15,13 +15,13 @@ class Sites(models.Model):
 
 class Keywords(models.Model):
     id = models.AutoField(primary_key=True)
-    personId = models.ForeignKey("Persons")
+    personId = models.ForeignKey("Persons", related_name='names')
     name = models.CharField(max_length=190)
     def __str__(self):
         return self.name
 
 class Pages(models.Model):
-    siteId = models.ForeignKey("Sites")
+    siteId = models.ForeignKey("Sites", related_name='sites')
     id = models.AutoField(primary_key=True)
     url = models.CharField(max_length=190)
     lastScanDate = models.DateField(auto_now_add=True)

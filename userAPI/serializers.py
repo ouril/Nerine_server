@@ -2,8 +2,6 @@ from rest_framework import serializers
 from .models import PersonPageRank, Persons, Sites, Pages, Keywords
 
 class PageRankSerializer(serializers.ModelSerializer):
-    #pageDate = serializers.SlugRelatedField(many=True,
-       # read_only=True, slug_field='lastScanDate')
     class Meta:
         model = PersonPageRank
         fields = ('__all__')
@@ -14,18 +12,17 @@ class PersonSerializer(serializers.ModelSerializer):
         model = Persons
         fields = ('__all__')
 
-
 class SitesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Sites
-        fields = ('__all__')
+        fields = ('personId', 'rank')
 
 
 class PagesSerializer(serializers.ModelSerializer):
-    #page = serializers.StringRelatedField(many=True)
+    page = PageRankSerializer(many=True, read_only=True)
     class Meta:
         model = Pages
-        fields = ('__all__',)
+        fields = ('url', 'lastScanDate', 'FoundDateTime', 'page')
 
 
 class KeywordSerializer(serializers.ModelSerializer):
