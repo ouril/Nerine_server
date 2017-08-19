@@ -1,31 +1,52 @@
 from rest_framework import serializers
-from .models import PersonPageRank, Persons, Sites, Pages, Keywords
-
-class PageRankSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PersonPageRank
-        fields = ('__all__')
+from .models import (
+                     PersonPageRank,
+                     Persons,
+                     Sites,
+                     Pages,
+                     Keywords
+                     )
 
 
 class PersonSerializer(serializers.ModelSerializer):
     class Meta:
         model = Persons
-        fields = ('__all__')
+        fields = ('name', 'ranks_on_pages')
+
+class PersonOneSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Persons
+        fields = ('name',)
+
+class PageRankSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PersonPageRank
+        fields = ('name', 'rank')
+
+    def get_name(self, obj):
+        return str(obj.personId.name)
 
 class SitesSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Sites
-        fields = ('personId', 'rank')
-
+        fields = ('__all__')
 
 class PagesSerializer(serializers.ModelSerializer):
-    page = PageRankSerializer(many=True, read_only=True)
+
+    ranks = PageRankSerializer(many=True, read_only=True)
+
     class Meta:
         model = Pages
-        fields = ('url', 'lastScanDate', 'FoundDateTime', 'page')
+        fields = ('lastScanDate', 'ranks')
 
 
-class KeywordSerializer(serializers.ModelSerializer):
+class DaySerialiser(serializers.ModelSerializer):
+    personId = PersonOneSerializer()
+    pageId = PageRankSerializer()
+
     class Meta:
-        model = Keywords
-        fields = ('__all__')
+        model = PersonPageRank
+        fields = ('personId', 'pageId')

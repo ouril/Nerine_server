@@ -1,8 +1,12 @@
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import PersonPageRank, Pages
-from .serializers import PageRankSerializer, PagesSerializer
-from rest_framework import viewsets
+from .models import PersonPageRank, Pages, Persons
+from .serializers import (
+    PageRankSerializer,
+    PagesSerializer,
+    PersonSerializer
+)
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework import generics
 
 @csrf_exempt
@@ -32,12 +36,14 @@ def rank_detail(request, data):
         return JsonResponse(serializer.data, safe=False )
 
 class RankViewSet(generics.ListAPIView):
-    serializer_class = PageRankSerializer
-    queryset = PersonPageRank.objects.all()
+    serializer_class = PersonSerializer
+    queryset = Persons.objects.all()
+    permission_classes = [IsAdminUser, IsAuthenticated]
 
 
 class DayRankViewSet(generics.RetrieveAPIView):
     serializer_class = PagesSerializer
-    queryset = Pages.objects.all()
     lookup_field = 'lastScanDate'
     lookup_url_kwarg = 'lastScanDate'
+    queryset = Pages.objects.all()
+    permission_classes = [IsAdminUser, IsAuthenticated]
