@@ -1,6 +1,20 @@
+from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import PersonPageRank, Pages, Persons
+
+from rest_framework.filters import (
+    SearchFilter,
+    OrderingFilter,
+)
+from rest_framework.pagination import (
+    LimitOffsetPagination,
+    PageNumberPagination
+)
+from .models import (
+    PersonPageRank,
+    Pages,
+    Persons
+)
 from .serializers import (
     PageRankSerializer,
     PagesSerializer,
@@ -47,3 +61,21 @@ class DayRankViewSet(generics.RetrieveAPIView):
     lookup_url_kwarg = 'lastScanDate'
     queryset = Pages.objects.all()
     permission_classes = [IsAdminUser, IsAuthenticated]
+
+class FilterViewSet(generics.ListAPIView):
+    serializer_class = PersonSerializer
+    permission_classes = [IsAdminUser, IsAuthenticated]
+    filter_backends = [SearchFilter,OrderingFilter]
+    search_fields = ['name', 'ranks_on_pages__pageId__siteId__name']
+    pagination_class = LimitOffsetPagination#PageNumberPagination
+
+    def get_queryset(self, *args, **kwargs):
+        queryset_list = Persons.objects.all()
+        query = self.request.GET.get('date')
+        if query:
+            queryset_list = queryset_list.filter(
+                Q(ranks_on_pages__pageId__lastScanDate__icontains=query) #|
+                #Q(name__incontains=query) #|
+                #Q(ranks_on_pages__sites__name__incontains = query)
+            ).distinct()
+        return queryset_list
