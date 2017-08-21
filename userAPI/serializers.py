@@ -1,25 +1,31 @@
-from rest_framework import serializers
+from django.contrib.auth import get_user_model
+from rest_framework.serializers import (
+            ModelSerializer,
+            CharField,
+            SerializerMethodField,
+            ValidationError
+)
 from .models import (
                      PersonPageRank,
                      Persons,
                      Sites,
                      Pages,
-                     Keywords
                      )
 
+User = get_user_model()
 
-class PersonSerializer(serializers.ModelSerializer):
+class PersonSerializer(ModelSerializer):
     class Meta:
         model = Persons
         fields = ('name', 'ranks_on_pages')
 
-class PersonOneSerializer(serializers.ModelSerializer):
+class PersonOneSerializer(ModelSerializer):
     class Meta:
         model = Persons
         fields = ('name',)
 
-class PageRankSerializer(serializers.ModelSerializer):
-    name = serializers.SerializerMethodField()
+class PageRankSerializer(ModelSerializer):
+    name = SerializerMethodField()
 
     class Meta:
         model = PersonPageRank
@@ -28,13 +34,22 @@ class PageRankSerializer(serializers.ModelSerializer):
     def get_name(self, obj):
         return str(obj.personId.name)
 
-class SitesSerializer(serializers.ModelSerializer):
+class DaySerialiser(ModelSerializer):
+    personId = PersonOneSerializer()
+    pageId = PageRankSerializer()
+
+    class Meta:
+        model = PersonPageRank
+        fields = ('personId', 'pageId')
+
+
+class SitesSerializer(ModelSerializer):
 
     class Meta:
         model = Sites
         fields = ('__all__')
 
-class PagesSerializer(serializers.ModelSerializer):
+class PagesSerializer(ModelSerializer):
 
     ranks = PageRankSerializer(many=True, read_only=True)
 
@@ -42,11 +57,37 @@ class PagesSerializer(serializers.ModelSerializer):
         model = Pages
         fields = ('lastScanDate', 'ranks')
 
-
-class DaySerialiser(serializers.ModelSerializer):
-    personId = PersonOneSerializer()
-    pageId = PageRankSerializer()
+class UserLoginSerialiser(ModelSerializer):
+    token = CharField(allow_blank=True, read_only=True)
+    username = CharField(required=False, allow_blank=True)
 
     class Meta:
-        model = PersonPageRank
-        fields = ('personId', 'pageId')
+        model = User
+        fields = (
+            'username',
+            'password',
+            'token',
+        )
+        extra_kwargs = {'password':
+                            {'write_only':True}
+                        }
+    def validate(self, data):
+
+        username = data.get('username', None)
+        password = data['password']
+        if not username:
+            raise ValidationError("Incorrect password")
+        user = User.objects.filter(username=username)
+        if user.exists() and user.count() == 1:
+            user_obj = user.first()
+        else:
+            raise ValidationError("Username is not valid!")
+        if user_obj:
+            if not user_obj.check_password(password):
+                raise ValidationError("Incorrect password")
+        data['token']=""
+        return data
+
+
+
+
