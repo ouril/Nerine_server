@@ -1,9 +1,11 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import make_password
 from rest_framework.serializers import (
             ModelSerializer,
             CharField,
             SerializerMethodField,
             ValidationError
+
 )
 from .models import (
                      PersonPageRank,
@@ -14,10 +16,34 @@ from .models import (
 
 User = get_user_model()
 
+class UserInfoSerialaser(ModelSerializer):
+    username = CharField(read_only=True, allow_blank=True)
+    email = CharField(read_only=True, allow_blank=True)
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'password')
+
+        extra_kwargs = {'password':
+                            {'write_only':True}
+                        }
+    def update(self, instance, validated_data):
+        password = validated_data['password']
+        password_hush = make_password(password)
+        validated_data['password'] = password_hush
+        return super(UserInfoSerialaser, self).update(instance, validated_data)
+
+
 class PersonSerializer(ModelSerializer):
+    ranks_on_pages = SerializerMethodField()
     class Meta:
         model = Persons
         fields = ('name', 'ranks_on_pages')
+
+    def get_ranks_on_pages(self, obj):
+        obj_list = obj.ranks_on_pages.filter(personId=obj.id)
+        list_of_ranks = [i.rank for i in obj_list]
+        return sum(list_of_ranks)
+
 
 class PersonOneSerializer(ModelSerializer):
     class Meta:
@@ -34,15 +60,6 @@ class PageRankSerializer(ModelSerializer):
     def get_name(self, obj):
         return str(obj.personId.name)
 
-class DaySerialiser(ModelSerializer):
-    personId = PersonOneSerializer()
-    pageId = PageRankSerializer()
-
-    class Meta:
-        model = PersonPageRank
-        fields = ('personId', 'pageId')
-
-
 class SitesSerializer(ModelSerializer):
 
     class Meta:
@@ -50,12 +67,11 @@ class SitesSerializer(ModelSerializer):
         fields = ('__all__')
 
 class PagesSerializer(ModelSerializer):
-
-    ranks = PageRankSerializer(many=True, read_only=True)
+    ranks = PageRankSerializer(many=True)
 
     class Meta:
         model = Pages
-        fields = ('lastScanDate', 'ranks')
+        fields = ('url', 'ranks')
 
 class UserLoginSerialiser(ModelSerializer):
     token = CharField(allow_blank=True, read_only=True)
